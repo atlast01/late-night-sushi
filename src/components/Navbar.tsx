@@ -1,11 +1,13 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Menu, X } from "lucide-react";
+import { Menu, X, User, LogIn } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 import rakoLogo from "@/assets/rako-logo.jfif";
 
 const navLinks = [
   { label: "Home", href: "/" },
   { label: "Menu", href: "/menu" },
+  { label: "Reviews", href: "/reviews" },
   { label: "The Vibe", href: "/#vibe" },
   { label: "Contact", href: "/booking" },
 ];
@@ -14,6 +16,7 @@ const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const location = useLocation();
+  const { user } = useAuth();
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 20);
@@ -50,13 +53,32 @@ const Navbar = () => {
           ))}
         </div>
 
-        {/* CTA */}
-        <Link
-          to="/booking"
-          className="hidden md:inline-flex items-center px-6 py-2.5 bg-primary text-primary-foreground font-body text-sm tracking-wider uppercase rounded-sm hover:bg-brand-red-glow transition-colors duration-300"
-        >
-          Book a Table
-        </Link>
+        {/* Right Side */}
+        <div className="hidden md:flex items-center gap-3">
+          {user ? (
+            <Link
+              to="/profile"
+              className="inline-flex items-center gap-2 px-4 py-2 text-nav-foreground font-body text-sm tracking-wider hover:text-primary transition-colors"
+            >
+              <User size={16} />
+              {user.name}
+            </Link>
+          ) : (
+            <Link
+              to="/login"
+              className="inline-flex items-center gap-2 px-4 py-2 text-nav-foreground font-body text-sm tracking-wider hover:text-primary transition-colors"
+            >
+              <LogIn size={16} />
+              Login
+            </Link>
+          )}
+          <Link
+            to="/booking"
+            className="inline-flex items-center px-6 py-2.5 bg-primary text-primary-foreground font-body text-sm tracking-wider uppercase rounded-sm hover:bg-brand-red-glow transition-colors duration-300"
+          >
+            Book a Table
+          </Link>
+        </div>
 
         {/* Mobile Toggle */}
         <button
@@ -80,6 +102,25 @@ const Navbar = () => {
                 {link.label}
               </Link>
             ))}
+
+            {user ? (
+              <Link
+                to="/profile"
+                className="flex items-center gap-2 text-nav-foreground font-body text-sm tracking-widest uppercase py-2"
+              >
+                <User size={16} />
+                {user.name}
+              </Link>
+            ) : (
+              <Link
+                to="/login"
+                className="flex items-center gap-2 text-nav-foreground font-body text-sm tracking-widest uppercase py-2"
+              >
+                <LogIn size={16} />
+                Login
+              </Link>
+            )}
+
             <Link
               to="/booking"
               className="inline-flex items-center justify-center px-6 py-3 bg-primary text-primary-foreground font-body text-sm tracking-wider uppercase rounded-sm"

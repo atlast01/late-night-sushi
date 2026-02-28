@@ -159,11 +159,11 @@ export const authApi = {
       const user = MOCK_USERS.find((u) => u.email === email);
       if (!user) {
         // Create mock user on login for demo
-        const newUser: User = {
+      const newUser: User = {
           id: crypto.randomUUID(),
           email,
           name: email.split("@")[0],
-          role: email.includes("admin") ? "admin" : "customer",
+          role: "customer",
           created_at: new Date().toISOString(),
         };
         const token = "mock_token_" + newUser.id;

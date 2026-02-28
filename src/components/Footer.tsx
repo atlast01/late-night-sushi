@@ -61,19 +61,9 @@ const Footer = () => {
               <p className="font-body text-muted-foreground text-sm mb-4">
                 รับข่าวสารเมนูพิเศษประจำเดือน
               </p>
-              <form className="flex gap-2" onSubmit={(e) => e.preventDefault()}>
-                <input
-                  type="email"
-                  placeholder="your@email.com"
-                  className="flex-1 bg-secondary border border-border rounded-sm px-4 py-2.5 font-body text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary transition-colors"
-                />
-                <button
-                  type="submit"
-                  className="px-4 py-2.5 bg-primary text-primary-foreground font-body text-sm rounded-sm hover:bg-brand-red-glow transition-colors"
-                >
-                  Subscribe
-                </button>
-              </form>
+              <p className="font-body text-muted-foreground/60 text-xs italic">
+                🚧 Coming Soon — ระบบ Newsletter กำลังพัฒนา
+              </p>
             </div>
           </div>
 

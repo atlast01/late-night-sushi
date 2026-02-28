@@ -128,6 +128,112 @@ CREATE INDEX idx_reviews_rating ON reviews(rating);
 
 ---
 
+## 7. Row Level Security (RLS) Policies
+
+> ⚠️ **สำคัญ**: RLS ต้องเปิดใช้งานบนทุกตาราง เพื่อป้องกันการเข้าถึงข้อมูลโดยไม่ได้รับอนุญาต
+
+### Helper Function — ตรวจสอบ Role (ป้องกัน Recursive RLS)
+
+```sql
+CREATE OR REPLACE FUNCTION public.has_role(_user_id UUID, _role app_role)
+RETURNS BOOLEAN
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.user_roles
+    WHERE user_id = _user_id AND role = _role
+  )
+$$;
+```
+
+### Enable RLS on All Tables
+
+```sql
+ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_roles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE menus ENABLE ROW LEVEL SECURITY;
+ALTER TABLE reservations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE reviews ENABLE ROW LEVEL SECURITY;
+```
+
+### Users Table Policies
+
+```sql
+CREATE POLICY "Users can view own data"
+  ON users FOR SELECT USING (id = current_setting('app.current_user_id')::uuid);
+
+CREATE POLICY "Users can update own data"
+  ON users FOR UPDATE USING (id = current_setting('app.current_user_id')::uuid);
+```
+
+### User Roles Policies
+
+```sql
+CREATE POLICY "Users can view own roles"
+  ON user_roles FOR SELECT USING (user_id = current_setting('app.current_user_id')::uuid);
+
+CREATE POLICY "Only admins can manage roles"
+  ON user_roles FOR ALL
+  USING (public.has_role(current_setting('app.current_user_id')::uuid, 'admin'));
+```
+
+### Menus Policies
+
+```sql
+CREATE POLICY "Menus are publicly readable"
+  ON menus FOR SELECT USING (true);
+
+CREATE POLICY "Only admins can modify menus"
+  ON menus FOR ALL
+  USING (public.has_role(current_setting('app.current_user_id')::uuid, 'admin'));
+```
+
+### Reservations Policies
+
+```sql
+CREATE POLICY "Users can view own reservations"
+  ON reservations FOR SELECT
+  USING (user_id = current_setting('app.current_user_id')::uuid);
+
+CREATE POLICY "Users can create reservations"
+  ON reservations FOR INSERT
+  WITH CHECK (user_id = current_setting('app.current_user_id')::uuid);
+
+CREATE POLICY "Admins can view all reservations"
+  ON reservations FOR SELECT
+  USING (public.has_role(current_setting('app.current_user_id')::uuid, 'admin'));
+
+CREATE POLICY "Admins can update reservations"
+  ON reservations FOR UPDATE
+  USING (public.has_role(current_setting('app.current_user_id')::uuid, 'admin'));
+```
+
+### Reviews Policies
+
+```sql
+CREATE POLICY "Approved reviews are publicly readable"
+  ON reviews FOR SELECT USING (status = 'approved');
+
+CREATE POLICY "Users can create reviews"
+  ON reviews FOR INSERT
+  WITH CHECK (user_id = current_setting('app.current_user_id')::uuid);
+
+CREATE POLICY "Users can view own reviews"
+  ON reviews FOR SELECT
+  USING (user_id = current_setting('app.current_user_id')::uuid);
+
+CREATE POLICY "Admins can manage all reviews"
+  ON reviews FOR ALL
+  USING (public.has_role(current_setting('app.current_user_id')::uuid, 'admin'));
+```
+
+> 💡 **Note for FastAPI**: ใช้ `SET app.current_user_id = '<uuid>'` ใน database session หลังจาก verify JWT token แล้ว เพื่อให้ RLS policies ทำงานได้ถูกต้อง
+
+---
+
 ## 🔑 FastAPI Endpoints Reference
 
 | Method | Endpoint | Auth | Description |

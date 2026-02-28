@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { z } from "zod";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import ScrollAnimate from "@/components/ScrollAnimate";
@@ -6,6 +7,14 @@ import { useAuth } from "@/contexts/AuthContext";
 import { reviewApi, type Review, type ReviewStats } from "@/services/api";
 import { Star, MessageCircle, Send } from "lucide-react";
 import { Link } from "react-router-dom";
+
+const reviewSchema = z.object({
+  rating: z.number().int().min(1, "กรุณาให้คะแนนอย่างน้อย 1 ดาว").max(5, "คะแนนสูงสุด 5 ดาว"),
+  comment: z.string()
+    .trim()
+    .min(1, "กรุณาเขียนรีวิว")
+    .max(1000, "รีวิวต้องไม่เกิน 1,000 ตัวอักษร"),
+});
 
 const StarRating = ({
   value,
@@ -69,6 +78,7 @@ const ReviewsPage = () => {
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [formError, setFormError] = useState("");
 
   useEffect(() => {
     reviewApi.getReviews().then(setReviews);
@@ -77,17 +87,26 @@ const ReviewsPage = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!comment.trim()) return;
+    setFormError("");
+
+    const result = reviewSchema.safeParse({ rating, comment: comment.trim() });
+    if (!result.success) {
+      setFormError(result.error.errors[0]?.message || "ข้อมูลไม่ถูกต้อง");
+      return;
+    }
+
     setSubmitting(true);
     try {
-      await reviewApi.createReview({ rating, comment: comment.trim() });
+      await reviewApi.createReview({ rating: result.data.rating, comment: result.data.comment });
       setComment("");
       setRating(5);
       setShowForm(false);
-      // Refresh
+      setFormError("");
       const [r, s] = await Promise.all([reviewApi.getReviews(), reviewApi.getStats()]);
       setReviews(r);
       setStats(s);
+    } catch (err: any) {
+      setFormError(err.message || "ส่งรีวิวไม่สำเร็จ กรุณาลองใหม่");
     } finally {
       setSubmitting(false);
     }
@@ -146,6 +165,11 @@ const ReviewsPage = () => {
           {showForm && user && (
             <ScrollAnimate>
               <form onSubmit={handleSubmit} className="bg-card border border-primary/30 rounded-sm p-6 mb-10">
+                {formError && (
+                  <div className="bg-destructive/10 border border-destructive/30 rounded-sm px-4 py-3 text-sm text-destructive font-body mb-4">
+                    {formError}
+                  </div>
+                )}
                 <div className="flex items-center gap-4 mb-4">
                   <p className="font-body text-sm text-muted-foreground">ให้คะแนน:</p>
                   <StarRating value={rating} onChange={setRating} size={28} />
@@ -157,11 +181,14 @@ const ReviewsPage = () => {
                   rows={4}
                   required
                   maxLength={1000}
-                  className="w-full bg-secondary border border-border rounded-sm px-4 py-3 font-body text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary transition-colors resize-none mb-4"
+                  className="w-full bg-secondary border border-border rounded-sm px-4 py-3 font-body text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary transition-colors resize-none mb-1"
                 />
+                <p className="font-body text-xs text-muted-foreground mb-4 text-right">
+                  {comment.length}/1,000
+                </p>
                 <button
                   type="submit"
-                  disabled={submitting}
+                  disabled={submitting || !comment.trim()}
                   className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground font-body text-sm tracking-[0.15em] uppercase rounded-sm hover:bg-brand-red-glow transition-colors disabled:opacity-50"
                 >
                   <Send size={14} />

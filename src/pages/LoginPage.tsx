@@ -91,12 +91,6 @@ const LoginPage = () => {
               ยังไม่มีบัญชี?{" "}
               <Link to="/register" className="text-primary hover:underline">สมัครสมาชิก</Link>
             </p>
-
-            <div className="border-t border-border pt-4 mt-1">
-              <p className="text-center font-body text-xs text-muted-foreground">
-                🧪 Demo: ใส่ email อะไรก็ได้เพื่อทดลองใช้งาน
-              </p>
-            </div>
           </form>
         </div>
       </div>
